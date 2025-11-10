@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İstanbul Tarihi Yapıları Haritası</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #container { display: flex; height: 100vh; }
+        #map-city { flex: 3; } 
+        #info-panel { flex: 1; padding: 20px; overflow-y: auto; background-color: #f8f8f8; border-left: 1px solid #ddd; }
+        h1 { margin-top: 0; color: #5c6bc0; } 
+        h2 { color: #8c9eff; }
+        .back-button { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            z-index: 1000; 
+            background: #fff; 
+            padding: 10px 15px; 
+            border-radius: 5px; 
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+        .structure-card { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 5px; cursor: pointer; transition: background-color 0.2s; }
+        .structure-card:hover { background-color: #e8eaf6; } /* Vurgu için mor tonu */
+    </style>
+</head>
+<body>
+    <a href="marmara.html" class="back-button">← Marmara Bölgesine Dön</a> 
+
+    <div id="container">
+        <div id="map-city"></div>
+
+        <div id="info-panel">
+            <h1>İstanbul Tarihi Yapılar Haritası</h1>
+            <p><strong>Kıtaları birleştiren şehir</strong> İstanbul'un Bizans ve Osmanlı mirasını keşfedin.</p>
+            <hr>
+            <div id="structure-list">
+                </div>
+            
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        // 1. Tarihi Yapıların Verisini Tanımlama (ORTAKÖY CAMİİ'nin Adı DÜZELTİLDİ)
+        var tarihi_yapilar = [
+            { 
+                name: "Ayasofya-i Kebir Cami-i Şerifi", lat: 41.0085, lng: 28.9802,
+                description: "Bizans İmparatorluğu'nun en büyük kilisesi olarak inşa edildi, daha sonra cami ve müze olarak kullanıldı. Dünya mimarlık tarihinin en önemli yapılarından.",
+                type: "Bizans/Osmanlı"
+            },
+            { 
+                name: "Topkapı Sarayı", lat: 41.0118, lng: 28.9835,
+                description: "Osmanlı İmparatorluğu'nun yaklaşık 400 yıl boyunca idari merkezi ve padişahların ikametgahıydı.",
+                type: "Osmanlı Dönemi"
+            },
+            { 
+                name: "Yerebatan Sarnıcı", lat: 41.0083, lng: 28.9778,
+                description: "Bizans döneminde inşa edilen, şehrin su ihtiyacını karşılayan devasa yer altı sarnıcı.",
+                type: "Bizans Dönemi"
+            },
+            { 
+                name: "Galata Kulesi", lat: 41.0256, lng: 28.9743, 
+                description: "Cenevizliler tarafından inşa edilen, daha sonra Osmanlı döneminde gözlem kulesi olarak kullanılan tarihi yapı.",
+                type: "Ceneviz/Osmanlı"
+            },
+            { 
+                name: "Kız Kulesi", 
+                lat: 41.0212, 
+                lng: 29.0042,
+                description: "İstanbul Boğazı'nın ortasında, Üsküdar açıklarında yer alan, Bizans'tan Osmanlı'ya kadar gözetleme kulesi ve deniz feneri olarak kullanılmış efsanevi yapı.",
+                type: "Bizans/Osmanlı"
+            },
+            {
+                name: "Rumeli Hisarı",
+                lat: 41.0848,
+                lng: 29.0567,
+                description: "İstanbul Boğazı'nın en dar yerinde, Fatih Sultan Mehmed tarafından 1452 yılında sadece 4 ayda yaptırılan, fetihten önceki en önemli hazırlık aşaması.",
+                type: "Osmanlı Dönemi"
+            },
+            {
+                name: "Anadolu Hisarı",
+                lat: 41.0821,
+                lng: 29.0670,
+                description: "Boğazın en dar noktasında, 1395 yılında Yıldırım Bayezid tarafından inşa edilen, İstanbul Boğazı'nın Asya yakasındaki tarihi kale.",
+                type: "Osmanlı Dönemi"
+            },
+            {
+                // İSİM DÜZELTİLDİ: Ortaköy Camii -> Büyük Mecidiye Camii
+                name: "Büyük Mecidiye Camii (Ortaköy Camii)",
+                lat: 41.0472,
+                lng: 29.0270,
+                description: "Neo-Barok tarzında, Sultan Abdülmecit tarafından yaptırılan ve Boğaz'ın simgelerinden olan cami. Halk arasında Ortaköy Camii olarak bilinir.",
+                type: "Osmanlı Dönemi"
+            }
+        ];
+
+        // 2. Haritayı başlatma (Sultanahmet Meydanı Merkez)
+        var cityMap = L.map('map-city').setView([41.0085, 28.9800], 15);
+
+        // 3. Harita karolarını ekleme
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(cityMap);
+
+        // 4. Dinamik Yapı Listesi Yükleme ve Marker Ekleme
+        var listDiv = document.getElementById('info-panel');
+        
+        tarihi_yapilar.forEach(function(yapi) {
+            // Marker Ekleme
+            var marker = L.marker([yapi.lat, yapi.lng]).addTo(cityMap);
+            
+            marker.bindPopup("<b>" + yapi.name + "</b><br>" + yapi.type);
+
+            // Yapı Kartını Oluşturma
+            var card = document.createElement('div');
+            card.className = 'structure-card';
+            card.innerHTML = 
+                '<h2>' + yapi.name + '</h2>' +
+                '<p><strong>Dönem:</strong> ' + yapi.type + '</p>' +
+                '<p>' + yapi.description + '</p>';
+            
+            listDiv.querySelector('#structure-list').appendChild(card);
+            
+            // Kart üzerine tıklandığında haritada ilgili noktaya gitme
+            card.addEventListener('click', function() {
+                cityMap.setView([yapi.lat, yapi.lng], 16);
+                marker.openPopup();
+            });
+        });
+
+    </script>
+    
+</body>
+</html>
