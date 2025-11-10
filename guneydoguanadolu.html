@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Güneydoğu Anadolu Bölgesi Tarihi Haritası</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #container { display: flex; height: 100vh; }
+        #map-guneydoguanadolu { flex: 2; } 
+        #sidebar { flex: 1; padding: 20px; overflow-y: auto; background-color: #f8f8f8; border-left: 1px solid #ddd; }
+        h1 { margin-top: 0; color: #ff8f00; } /* Güneydoğu için altın sarısı/turuncu tonu */
+        h2 { color: #f9a825; }
+        .back-button { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            z-index: 1000; 
+            background: #fff; 
+            padding: 10px 15px; 
+            border-radius: 5px; 
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+        #il-detay-alani { border-top: 2px solid #ccc; padding-top: 15px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-button">← Ana Haritaya Dön</a>
+
+    <div id="container">
+        <div id="map-guneydoguanadolu"></div>
+
+        <div id="sidebar">
+            <h1>Güneydoğu Anadolu Bölgesi Tarihi</h1>
+            <p><strong>Bölge Kapsamındaki İller:</strong> Gaziantep, Şanlıurfa, Diyarbakır, Mardin, Batman, Adıyaman, Siirt, Şırnak, Kilis.</p>
+            <hr>
+            <h2>Bölgeye Genel Bakış</h2>
+            <p>Mezopotamya'nın kuzeyinde yer alan bölge, dünyanın en eski yerleşim yerlerine (Göbeklitepe gibi) ev sahipliği yapmıştır. Sümer, Akad, Babil, Asur, Roma ve İslam medeniyetlerinin izlerini taşır.</p>
+            <p style="font-style: italic; color: #388e3c;">Haritadaki bir ilin noktasına tıklayarak o ilin detaylı tarihi bilgilerini görüntüleyin.</p>
+            
+            <div id="il-detay-alani">
+                <h2>Lütfen Bir İl Seçiniz</h2>
+                <p>Seçtiğiniz ilin tarihi, önemli yapıları ve projenizdeki yeri bu alanda gösterilecektir.</p>
+            </div>
+            </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        // 1. İllerin Verisini ve Tarihsel İçeriğini Tanımlama
+        var guneydogu_iller = [
+            { 
+                name: "Şanlıurfa", lat: 37.1500, lng: 38.7997,
+                tarih_baslik: "Göbeklitepe: Tarihin Sıfır Noktası",
+                tarih_icerik: "<p>Dünyanın bilinen en eski tapınak kompleksi olan Göbeklitepe'ye ev sahipliği yapar. Aynı zamanda İbrahim Peygamber'in doğum yeri olarak kabul edilen, inanç turizmi açısından kritik bir merkezdir.</p><h3>Önemli Yapılar:</h3><ul><li>Göbeklitepe (UNESCO)</li><li>Balıklıgöl (Halil-ür Rahman Gölü)</li><li>Şanlıurfa Kalesi</li></ul>"
+            },
+            { 
+                name: "Gaziantep", lat: 37.0662, lng: 37.3833,
+                tarih_baslik: "Antik Zeugma ve Tarihi İpek Yolu",
+                tarih_icerik: "<p>Hititler'den beri yerleşim görmüş, İpek Yolu üzerinde önemli bir duraktır. Fırat Nehri kıyısındaki Zeugma Antik Kenti ve mozaikleri dünya çapında ünlüdür. Kurtuluş Savaşı'ndaki direnişi ile 'Gazi' unvanını almıştır.</p><h3>Önemli Yapılar:</h3><ul><li>Zeugma Mozaik Müzesi</li><li>Gaziantep Kalesi</li></ul>"
+            },
+            { name: "Mardin", lat: 37.3200, lng: 40.7333,
+                tarih_baslik: "Taşın Şiiri ve Çok Kültürlü Miras",
+                tarih_icerik: "<p>Taş evleri, manastırları ve kendine özgü mimarisiyle ünlüdür. Süryani, Arap ve Kürt kültürlerinin yüzyıllardır bir arada yaşadığı tarihi bir kenttir.</p>"
+            },
+            { name: "Diyarbakır", lat: 37.9100, lng: 40.2400,
+                tarih_baslik: "Surların ve Hevsel Bahçelerinin Şehri",
+                tarih_icerik: "<p>UNESCO Dünya Mirası Listesi'nde yer alan görkemli surları ve Hevsel Bahçeleri ile tarihsel bir kalenin kentidir. Geçmişte Amid olarak bilinirdi ve birçok medeniyete merkezlik etmiştir.</p>"
+            },
+            { name: "Adıyaman", lat: 37.7610, lng: 38.2780, tarih_baslik: "Nemrut Dağı ve Kommagene Krallığı", tarih_icerik: "<p>Kommagene Krallığı'nın kralı I. Antiochos'un devasa heykellerinin bulunduğu Nemrut Dağı (UNESCO) buradadır. Bölge, Fırat Nehri'nin tarihi geçiş yolları üzerinde yer alır.</p>" },
+            { name: "Batman", lat: 37.8833, lng: 41.1333, tarih_baslik: "Hasankeyf ve Petrol Tarihi", tarih_icerik: "<p>Antik Hasankeyf kentine ev sahipliği yapmıştır. Ilısu Barajı nedeniyle tarihi yapıların bir kısmı taşınmıştır. Petrol sanayisiyle tanınır.</p>" },
+            { name: "Siirt", lat: 37.9333, lng: 41.9500, tarih_baslik: "İpek Yolu ve Botan Vadisi", tarih_icerik: "<p>Botan Çayı ve vadisinin bulunduğu Siirt, tarihi İpek Yolu'nun güzergahlarından biridir. İslami eserler ve medreseler açısından zengin bir mirasa sahiptir.</p>" },
+            { name: "Şırnak", lat: 37.5167, lng: 42.4667, tarih_baslik: "Cudi Dağı ve Sınır Tarihi", tarih_icerik: "<p>Cudi Dağı ve Gabar Dağları'nın bulunduğu, stratejik öneme sahip bir sınır bölgesidir. Tarihi İpek Yolu buradan da geçerdi.</p>" },
+            { name: "Kilis", lat: 36.7000, lng: 37.1167, tarih_baslik: "Kilis Tarihi", tarih_icerik: "<p>Suriye sınırında yer alır ve Gaziantep'e yakınlığı nedeniyle bölge tarihi ile paralel bir gelişim göstermiştir. Zeytinyağı üretimiyle meşhurdur.</p>" }
+        ];
+
+        // 2. Haritayı başlatma
+        // [37.5, 39.5] Güneydoğu Anadolu Bölgesi merkezine yakın bir koordinat
+        var guneydoguMap = L.map('map-guneydoguanadolu').setView([37.5, 39.5], 7);
+
+        // 3. Harita karolarını ekleme
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(guneydoguMap);
+
+        // 4. Dinamik İçerik Yükleme Fonksiyonu
+        function loadCityDetails(ilData) {
+            var detailsDiv = document.getElementById('il-detay-alani');
+            
+            detailsDiv.innerHTML = 
+                '<h2>' + ilData.name + ' Detaylı Bilgiler</h2>' +
+                '<h3>' + ilData.tarih_baslik + '</h3>' +
+                ilData.tarih_icerik;
+        }
+
+        // 5. Bölgedeki her il için nokta (marker) ekleme ve tıklama olayı bağlama
+        guneydogu_iller.forEach(function(il) {
+            var marker = L.marker([il.lat, il.lng]).addTo(guneydoguMap);
+            
+            marker.bindPopup("<b>" + il.name + "</b><br>Detayları görmek için tıkla.");
+            
+            marker.on('click', function(e) {
+                loadCityDetails(il);
+                // Tıklanan ilin merkezine zoom yapma
+                guneydoguMap.setView(e.latlng, 8); 
+            });
+        });
+
+        // Sayfa yüklendiğinde varsayılan olarak Şanlıurfa'nın bilgilerini göster
+        loadCityDetails(guneydogu_iller[0]); 
+    </script>
+    
+</body>
+</html>
