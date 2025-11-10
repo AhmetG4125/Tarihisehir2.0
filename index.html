@@ -1,0 +1,104 @@
+<a href="marmara.html" class="region-button" id="marmara-button">Marmara Bölgesi</a> 
+        
+        <a href="#" class="region-button" id="karadeniz-button" onclick="return false;">Karadeniz Bölgesi (Beklemede)</a>
+        ```
+
+Güncellenmiş **`index.html`**'in tam kodunu aşağıda bulabilirsiniz:
+
+```html
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Türkiye Tarihi Yerler Haritası Projesi</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #fafafa; }
+        #map-container { height: 70vh; width: 100%; border-bottom: 3px solid #ccc; }
+        #regions-menu { text-align: center; padding: 20px; background-color: #f1f1f1; }
+        h1 { color: #333; margin-bottom: 20px; }
+        .region-button {
+            display: inline-block;
+            padding: 12px 25px;
+            margin: 8px;
+            text-decoration: none;
+            color: white;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.1s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        /* Bölge Butonu Renkleri */
+        #ege-button { background-color: #5c6bc0; } 
+        #ege-button:hover { background-color: #4c5aa9; transform: translateY(-2px); }
+
+        #akdeniz-button { background-color: #d32f2f; } 
+        #akdeniz-button:hover { background-color: #b71c1c; transform: translateY(-2px); }
+
+        #marmara-button { background-color: #00897b; } /* GÜNCELLENDİ */
+        #marmara-button:hover { background-color: #00695c; transform: translateY(-2px); } /* GÜNCELLENDİ */
+
+        #karadeniz-button { background-color: #388e3c; } 
+        #karadeniz-button:hover { background-color: #2e7d32; transform: translateY(-2px); }
+
+        #icanadolu-button { background-color: #ffb300; } 
+        #icanadolu-button:hover { background-color: #ffa000; transform: translateY(-2px); }
+
+        #doguanadolu-button { background-color: #455a64; }
+        #doguanadolu-button:hover { background-color: #37474f; transform: translateY(-2px); }
+
+        #guneydoguanadolu-button { background-color: #e65100; }
+        #guneydoguanadolu-button:hover { background-color: #bf360c; transform: translateY(-2px); }
+
+    </style>
+</head>
+<body>
+    <div id="map-container">
+        </div>
+
+    <div id="regions-menu">
+        <h1>Bölge Haritaları</h1>
+        <p>Görmek istediğiniz bölgeyi seçiniz:</p>
+        
+        <a href="ege.html" class="region-button" id="ege-button">Ege Bölgesi</a>
+        
+        <a href="akdeniz.html" class="region-button" id="akdeniz-button">Akdeniz Bölgesi</a>
+
+        <a href="marmara.html" class="region-button" id="marmara-button">Marmara Bölgesi</a> <a href="#" class="region-button" id="karadeniz-button" onclick="return false;">Karadeniz Bölgesi (Beklemede)</a>
+        <a href="#" class="region-button" id="icanadolu-button" onclick="return false;">İç Anadolu Bölgesi (Beklemede)</a>
+        <a href="#" class="region-button" id="doguanadolu-button" onclick="return false;">Doğu Anadolu Bölgesi (Beklemede)</a>
+        <a href="#" class="region-button" id="guneydoguanadolu-button" onclick="return false;">Güneydoğu Anadolu Bölgesi (Beklemede)</a>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        // Haritayı başlatma (Türkiye merkezli)
+        var turkeyMap = L.map('map-container').setView([39.0, 35.0], 5);
+
+        // Harita karolarını ekleme
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(turkeyMap);
+
+        // Bölgelerin genel merkezlerini işaretlemek için markerlar
+        // Ege Merkezi
+        L.marker([38.5, 29.0]).addTo(turkeyMap)
+            .bindPopup("<b>Ege Bölgesi</b><br><a href='ege.html'>Detaylara Git</a>").openPopup();
+            
+        // Akdeniz Merkezi
+        L.marker([37.0, 34.0]).addTo(turkeyMap)
+            .bindPopup("<b>Akdeniz Bölgesi</b><br><a href='akdeniz.html'>Detaylara Git</a>");
+            
+        // Marmara Merkezi
+        L.marker([41.0, 29.0]).addTo(turkeyMap)
+            .bindPopup("<b>Marmara Bölgesi</b><br><a href='marmara.html'>Detaylara Git</a>"); // LİNK AKTİF EDİLDİ
+
+    </script>
+</body>
+</html>
