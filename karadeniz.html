@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karadeniz Bölgesi Tarihi Haritası</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #container { display: flex; height: 100vh; }
+        #map-karadeniz { flex: 2; } 
+        #sidebar { flex: 1; padding: 20px; overflow-y: auto; background-color: #f8f8f8; border-left: 1px solid #ddd; }
+        h1 { margin-top: 0; color: #388e3c; } /* Karadeniz için koyu yeşil */
+        h2 { color: #66bb6a; }
+        .back-button { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            z-index: 1000; 
+            background: #fff; 
+            padding: 10px 15px; 
+            border-radius: 5px; 
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+        #il-detay-alani { border-top: 2px solid #ccc; padding-top: 15px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-button">← Ana Haritaya Dön</a>
+
+    <div id="container">
+        <div id="map-karadeniz"></div>
+
+        <div id="sidebar">
+            <h1>Karadeniz Bölgesi Tarihi</h1>
+            <p><strong>Bölge Kapsamındaki İller:</strong> Trabzon, Samsun, Zonguldak, Bartın, Kastamonu, Sinop, Ordu, Giresun, Rize, Artvin, Bayburt, Gümüşhane, Tokat, Amasya, Çorum, Bolu, Düzce, Karabük.</p>
+            <hr>
+            <h2>Bölgeye Genel Bakış</h2>
+            <p>Karadeniz, Antik çağlarda ticaret kolonilerine ev sahipliği yapmış (özellikle Sinop ve Trabzon). Pontus Rum Devleti ve Osmanlı yönetimi gibi farklı dönemlerin izlerini taşır. Dik ve zorlu coğrafyası kültürel kimliğini şekillendirmiştir.</p>
+            <p style="font-style: italic; color: #388e3c;">Haritadaki bir ilin noktasına tıklayarak o ilin detaylı tarihi bilgilerini görüntüleyin.</p>
+            
+            <div id="il-detay-alani">
+                <h2>Lütfen Bir İl Seçiniz</h2>
+                <p>Seçtiğiniz ilin tarihi, önemli yapıları ve projenizdeki yeri bu alanda gösterilecektir.</p>
+            </div>
+            </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        // 1. İllerin Verisini ve Tarihsel İçeriğini Tanımlama
+        var karadeniz_iller = [
+            { 
+                name: "Trabzon", lat: 41.0069, lng: 39.7269,
+                tarih_baslik: "Ticaret Merkezi ve Komnenos İmparatorluğu",
+                tarih_icerik: "<p>Antik adı Trapezus olan kent, İpek Yolu'nun Karadeniz'deki önemli bir ucuydu. 1204-1461 yılları arasında Komnenos ailesi tarafından yönetilen Trabzon İmparatorluğu'na başkentlik yaptı.</p><h3>Önemli Yapılar:</h3><ul><li>Sümela Manastırı (Maçka)</li><li>Ayasofya Camii (eski Kilise)</li></ul>"
+            },
+            { 
+                name: "Samsun", lat: 41.2928, lng: 36.3315,
+                tarih_baslik: "Milli Mücadele'nin Başlangıcı",
+                tarih_icerik: "<p>Mustafa Kemal Atatürk'ün 19 Mayıs 1919'da buraya çıkarak Milli Mücadele'yi başlatmasıyla Türk tarihinde hayati bir rol üstlenmiştir. Antik adı Amisos'tur.</p><h3>Önemli Yapılar:</h3><ul><li>Bandırma Vapuru Müzesi</li><li>Amazon Köyü</li></ul>"
+            },
+            { name: "Sinop", lat: 42.0289, lng: 35.1539,
+                tarih_baslik: "Karadeniz'in Tek Doğal Limanı",
+                tarih_icerik: "<p>Tarih boyunca Karadeniz'in en önemli ticaret limanıydı. Ünlü filozof Diyojen'in doğum yeridir. Tarihi bir hapishaneye ev sahipliği yapar.</p>"
+            },
+            { name: "Amasya", lat: 40.6500, lng: 35.8333,
+                tarih_baslik: "Pontus Krallığı Başkenti ve Şehzadeler Şehri",
+                tarih_icerik: "<p>Pontus Krallığı'na başkentlik yapmıştır. Osmanlı döneminde birçok şehzadenin sancak beyi olarak görev yaptığı 'Şehzadeler Şehri' unvanına sahiptir.</p>"
+            },
+            { name: "Çorum", lat: 40.5500, lng: 34.9500, tarih_baslik: "Hitit Uygarlığının İzleri", tarih_icerik: "<p>Anadolu'nun en eski medeniyetlerinden Hititler'in önemli merkezlerinden Hattuşa ve Alacahöyük bu il sınırları içindedir. Tarih öncesi döneme ışık tutar.</p>" },
+            { name: "Rize", lat: 41.0203, lng: 40.5167, tarih_baslik: "Laz ve Hemşin Kültürü", tarih_icerik: "<p>Coğrafi yapısı nedeniyle ulaşımın zor olduğu bölgede kendine özgü Laz ve Hemşin kültürleri gelişmiştir. Kaleleri ve yaylaları dikkat çeker.</p>" },
+            { name: "Artvin", lat: 41.1833, lng: 41.8333, tarih_baslik: "Gürcü Mimarisi ve Tarihi Kaleler", tarih_icerik: "<p>Gürcü kültüründen etkilenmiş tarihi kiliseler ve kaleler barındırır. Bölge, Çoruh Nehri'nin çevresinde şekillenmiştir.</p>" },
+            { name: "Zonguldak", lat: 41.4468, lng: 31.7890, tarih_baslik: "Türkiye'nin Kömür Başkenti", tarih_icerik: "<p>Cumhuriyet dönemi sanayisi ve kömür madenciliği tarihi açısından önemlidir. Ereğli (Herakleia) gibi antik kentlere sahiptir.</p>" },
+            { name: "Kastamonu", lat: 41.2167, lng: 33.7833, tarih_baslik: "Candaroğulları Beyliği ve Kastamonu", tarih_icerik: "<p>Anadolu Beylikleri döneminde Candaroğulları'na başkentlik yapmıştır. Osmanlı'nın ilk yıllarında önemli bir merkezdi.</p>" },
+            { name: "Ordu", lat: 40.9833, lng: 37.8833, tarih_baslik: "Fındık ve Antik Yerleşimler", tarih_icerik: "<p>Orta Karadeniz'in önemli liman şehirlerinden biridir. Antik çağlardan kalma yerleşim izleri bulunur.</p>" },
+            { name: "Giresun", lat: 40.9167, lng: 38.3833, tarih_baslik: "Giresun Kalesi ve Kirazın Anavatanı", tarih_icerik: "<p>Adını kiraz anlamına gelen Kerasus'tan aldığı düşünülür. Tarihi kalesi ve adası bulunur.</p>" },
+            { name: "Tokat", lat: 40.3167, lng: 36.5500, tarih_baslik: "Danişmentliler Merkezi", tarih_icerik: "<p>Anadolu'nun Türkleşmesinde önemli rol oynayan Danişmentliler Beyliği'nin merkeziydi. Tokat Kalesi ve Yağıbasan Medresesi önemlidir.</p>" },
+            { name: "Bolu", lat: 40.7333, lng: 31.6000, tarih_baslik: "Bitinya ve Tarihi Geçitler", tarih_icerik: "<p>Antik Bitinya bölgesinde yer alır ve D-100 karayolu üzerindeki konumuyla tarih boyunca önemli bir geçiş güzergahı olmuştur.</p>" },
+            { name: "Gümüşhane", lat: 40.4333, lng: 39.4667, tarih_baslik: "Gümüş Madenleri Tarihi", tarih_icerik: "<p>Adını bölgedeki gümüş madenlerinden alır. Tarih boyunca bu madenler nedeniyle ticari öneme sahip olmuştur.</p>" },
+            { name: "Bayburt", lat: 40.2500, lng: 40.2333, tarih_baslik: "Bayburt Kalesi ve İpek Yolu", tarih_icerik: "<p>Tarihi İpek Yolu üzerindeki kalelerden birine sahiptir. Tarihi Bayburt Kalesi bölgenin en önemli yapısıdır.</p>" },
+            { name: "Düzce", lat: 40.8430, lng: 31.1550, tarih_baslik: "Konuralp (Prusias ad Hypium)", tarih_icerik: "<p>Düzce yakınlarında, Roma ve Bizans dönemine ait önemli bir antik kent olan Prusias ad Hypium (Konuralp) yer alır.</p>" },
+            { name: "Karabük", lat: 41.2057, lng: 32.3789, tarih_baslik: "Safranbolu Evleri ve Sanayi", tarih_icerik: "<p>UNESCO Dünya Mirası Listesi'nde yer alan geleneksel Osmanlı mimarisinin güzel örneklerini barındıran Safranbolu ilçesi buradadır.</p>" },
+            { name: "Bartın", lat: 41.6361, lng: 32.3333, tarih_baslik: "Amastris ve Deniz Ticareti", tarih_icerik: "<p>Antik Amastris kentinin bulunduğu Bartın, Karadeniz kıyısındaki küçük ancak önemli bir ticaret noktasıydı.</p>" }
+        ];
+
+        // 2. Haritayı başlatma
+        // [41.25, 36.0] Karadeniz Bölgesi merkezine yakın bir koordinat
+        var karadenizMap = L.map('map-karadeniz').setView([41.25, 36.0], 6);
+
+        // 3. Harita karolarını ekleme
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(karadenizMap);
+
+        // 4. Dinamik İçerik Yükleme Fonksiyonu
+        function loadCityDetails(ilData) {
+            var detailsDiv = document.getElementById('il-detay-alani');
+            
+            detailsDiv.innerHTML = 
+                '<h2>' + ilData.name + ' Detaylı Bilgiler</h2>' +
+                '<h3>' + ilData.tarih_baslik + '</h3>' +
+                ilData.tarih_icerik;
+        }
+
+        // 5. Bölgedeki her il için nokta (marker) ekleme ve tıklama olayı bağlama
+        karadeniz_iller.forEach(function(il) {
+            var marker = L.marker([il.lat, il.lng]).addTo(karadenizMap);
+            
+            marker.bindPopup("<b>" + il.name + "</b><br>Detayları görmek için tıkla.");
+            
+            marker.on('click', function(e) {
+                loadCityDetails(il);
+                // Tıklanan ilin merkezine zoom yapma
+                karadenizMap.setView(e.latlng, 7); 
+            });
+        });
+
+        // Sayfa yüklendiğinde varsayılan olarak Samsun'un bilgilerini göster
+        loadCityDetails(karadeniz_iller[1]); 
+    </script>
+    
+</body>
+</html>
