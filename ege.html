@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ege Bölgesi Tarihi Haritası</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #container { display: flex; height: 100vh; }
+        #map-ege { flex: 2; } 
+        #sidebar { flex: 1; padding: 20px; overflow-y: auto; background-color: #f8f8f8; border-left: 1px solid #ddd; }
+        h1 { margin-top: 0; color: #5c6bc0; } 
+        h2 { color: #8c9eff; }
+        .back-button { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            z-index: 1000; 
+            background: #fff; 
+            padding: 10px 15px; 
+            border-radius: 5px; 
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+        #il-detay-alani { border-top: 2px solid #ccc; padding-top: 15px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-button">← Ana Haritaya Dön</a>
+
+    <div id="container">
+        <div id="map-ege"></div>
+
+        <div id="sidebar">
+            <h1>Ege Bölgesi Tarihi</h1>
+            <p><strong>Bölge Kapsamındaki İller:</strong> İzmir, Manisa, Aydın, Denizli, Muğla, Afyonkarahisar, Kütahya, Uşak.</p>
+            <hr>
+            <h2>Bölgeye Genel Bakış</h2>
+            <p>Antik İyonya'nın merkezidir. Efes, Hierapolis (Pamukkale), Pergamon gibi UNESCO Dünya Mirası listesindeki pek çok antik kente ev sahipliği yapmıştır. Batı medeniyetinin doğuşunda rol oynayan pek çok önemli felsefeci ve bilim insanı bu topraklarda yaşamıştır.</p>
+            <p style="font-style: italic; color: #388e3c;">Haritadaki bir ilin noktasına tıklayarak o ilin tarihi bilgilerini ve detay harita bağlantısını görüntüleyin.</p>
+            
+            <div id="il-detay-alani">
+                <h2>Lütfen Bir İl Seçiniz</h2>
+                <p>Seçtiğiniz ilin tarihi, önemli yapıları ve projenizdeki yeri bu alanda gösterilecektir.</p>
+            </div>
+            </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        // 1. İllerin Verisini ve Tarihsel İçeriğini Tanımlama
+        var ege_iller = [
+            { 
+                name: "İzmir", slug: "izmir_tarihi", lat: 38.4189, lng: 27.1287, 
+                tarih_baslik: "İyonya'nın İncisi ve Antik Smyrna", 
+                tarih_icerik: "<p>Antik Çağ'da Smyrna olarak bilinen kent, önemli bir İyon liman ve ticaret merkeziydi. Tarihi Kemeraltı Çarşısı ve Saat Kulesi şehrin sembolleridir.</p>"
+            },
+            { 
+                name: "Manisa", slug: "manisa_tarihi", lat: 38.6189, lng: 27.4063,
+                tarih_baslik: "Lidya Başkenti ve Şehzadeler Şehri",
+                tarih_icerik: "<p>Antik Lidya Krallığı'nın başkenti Sardes (Sart) bu il sınırlarında yer alır. Osmanlı döneminde ise şehzadelerin yetiştirildiği 'Şehzadeler Şehri' olarak bilinir.</p>"
+            },
+            { 
+                name: "Aydın", slug: "aydin_tarihi", lat: 37.8427, lng: 27.8456,
+                tarih_baslik: "Büyük Menderes ve İyon Limanları",
+                tarih_icerik: "<p>Büyük Menderes (Meander) Nehri çevresindeki verimli topraklar üzerine kuruludur. Priene, Milet ve Didim gibi İyon medeniyetinin en önemli antik kentlerine ev sahipliği yapar.</p>"
+            },
+            { 
+                name: "Denizli", slug: "denizli_tarihi", lat: 37.7788, lng: 29.0874,
+                tarih_baslik: "Hierapolis ve Laodikeia",
+                tarih_icerik: "<p>Pamukkale'deki travertenleriyle ünlü Hierapolis Antik Kenti (UNESCO) ve Erken Hristiyanlık için önemli olan Laodikeia antik şehirleri buradadır.</p>"
+            },
+            { 
+                name: "Muğla", slug: "mugla_tarihi", lat: 37.2155, lng: 27.9711,
+                tarih_baslik: "Karya ve Likya Medeniyetleri",
+                tarih_icerik: "<p>Antik Karya ve Likya medeniyetlerinin izlerini taşır. Halikarnassos (Bodrum) Mozolesi ve Kaunos Antik Kenti gibi önemli kalıntıları barındırır.</p>"
+            },
+            { 
+                name: "Afyonkarahisar", slug: "afyonkarahisar_tarihi", lat: 38.7562, lng: 30.5401,
+                tarih_baslik: "Frigya ve Büyük Taarruz",
+                tarih_icerik: "<p>Eski Frigya medeniyetinin batı ucunda yer alır. Kalesi ve mermerleri ile ünlüdür. Kurtuluş Savaşı'nın kilit noktası olan Büyük Taarruz'un başlangıç yeridir.</p>"
+            },
+            { 
+                name: "Kütahya", slug: "kutahya_tarihi", lat: 39.4217, lng: 29.9881,
+                tarih_baslik: "Çini Sanatı ve Frigya Vadileri",
+                tarih_icerik: "<p>Türk çini ve seramik sanatının en önemli merkezidir. Aizanoi Antik Kenti ve Frigya Vadisi'ndeki tarihi kalıntıları ile dikkat çeker.</p>"
+            },
+            { 
+                name: "Uşak", slug: "usak_tarihi", lat: 38.6750, lng: 29.4000,
+                tarih_baslik: "Kroisos Hazineleri ve Frigya",
+                tarih_icerik: "<p>Lidya dönemine ait olan ve 'Kroisos Hazineleri' olarak bilinen Karun Hazinelerine ev sahipliği yapmıştır. Frigya'dan Osmanlı'ya uzanan tarihi izleri barındırır.</p>"
+            }
+        ];
+
+        // 2. Haritayı başlatma (Ege Bölgesi merkezli ayarlandı)
+        var egeMap = L.map('map-ege').setView([38.5, 29.0], 7);
+
+        // 3. Harita karolarını ekleme
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(egeMap);
+
+        // 4. Dinamik İçerik Yükleme Fonksiyonu
+        function loadCityDetails(ilData) {
+            var detailsDiv = document.getElementById('il-detay-alani');
+            
+            detailsDiv.innerHTML = 
+                '<h2>' + ilData.name + ' Detaylı Bilgiler</h2>' +
+                '<h3>' + ilData.tarih_baslik + '</h3>' +
+                ilData.tarih_icerik;
+
+            // Detay haritası olan iller (TÜM EGE BÖLGESİ İLLERİ EKLENDİ)
+            const detayliIller = ["İzmir", "Manisa", "Aydın", "Denizli", "Muğla", "Afyonkarahisar", "Kütahya", "Uşak"];
+
+            if (ilData.slug && detayliIller.includes(ilData.name)) {
+                detailsDiv.innerHTML += 
+                    '<p style="margin-top: 15px;">' +
+                    '<a href="' + ilData.slug + '.html" style="background-color: #5c6bc0; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">' +
+                    ilData.name + ' Detay Haritasına Git &rarr;' +
+                    '</a></p>';
+            } else {
+                 detailsDiv.innerHTML += '<p style="margin-top: 15px; color: #ff9800;">Detay haritası henüz oluşturulmadı.</p>';
+            }
+        }
+
+        // 5. Bölgedeki her il için nokta (marker) ekleme ve tıklama olayı bağlama
+        ege_iller.forEach(function(il) {
+            const detayliIller = ["İzmir", "Manisa", "Aydın", "Denizli", "Muğla", "Afyonkarahisar", "Kütahya", "Uşak"]; // Linkin popup'ta görünmesi için de bu listeyi kullanıyoruz
+
+            var marker = L.marker([il.lat, il.lng]).addTo(egeMap);
+            
+            var popupContent = "<b>" + il.name + "</b><br>";
+
+            if (il.slug && detayliIller.includes(il.name)) {
+                 popupContent += '<a href="' + il.slug + '.html" style="color: #007bff; font-weight: bold; text-decoration: none;">Tarihi Yapıları Haritada Gör &rarr;</a>'; 
+            } else {
+                 popupContent += 'Detay haritası beklemede.'; 
+            }
+
+            marker.bindPopup(popupContent, {
+                closeButton: true,
+                autoClose: false, 
+                closeOnClick: false 
+            });
+            
+            marker.on('click', function(e) {
+                loadCityDetails(il);
+                // Tıklanan ilin merkezine zoom yapma
+                egeMap.setView(e.latlng, 8); 
+                marker.openPopup(); 
+            });
+        });
+
+        // Sayfa yüklendiğinde varsayılan olarak İzmir'in bilgilerini göster
+        loadCityDetails(ege_iller[0]); 
+    </script>
+    
+</body>
+</html>
