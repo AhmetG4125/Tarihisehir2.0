@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balıkesir Tarihi Yapıları Haritası</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #container { display: flex; height: 100vh; }
+        #map-city { flex: 3; } 
+        #info-panel { flex: 1; padding: 20px; overflow-y: auto; background-color: #f8f8f8; border-left: 1px solid #ddd; }
+        h1 { margin-top: 0; color: #5c6bc0; } 
+        h2 { color: #8c9eff; }
+        .back-button { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            z-index: 1000; 
+            background: #fff; 
+            padding: 10px 15px; 
+            border-radius: 5px; 
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+        .structure-card { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 5px; cursor: pointer; transition: background-color 0.2s; }
+        .structure-card:hover { background-color: #e8eaf6; }
+    </style>
+</head>
+<body>
+    <a href="marmara.html" class="back-button">← Marmara Bölgesine Dön</a> 
+
+    <div id="container">
+        <div id="map-city"></div>
+
+        <div id="info-panel">
+            <h1>Balıkesir Tarihi Yapıları Haritası</h1>
+            <p>Antik limanlardan Karesi Beyliği eserlerine uzanan Balıkesir'in zengin tarihini keşfedin.</p>
+            <hr>
+            <div id="structure-list">
+                </div>
+            
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        // 1. Tarihi ve Kültürel Yapıların Verisini Tanımlama (Kuş Cenneti Çıkarıldı)
+        var tarihi_yapilar = [
+            { 
+                name: "Zağnos Paşa Camii ve Külliyesi", 
+                lat: 39.6485, 
+                lng: 27.8800,
+                description: "Fatih Sultan Mehmed'in sadrazamlarından Zağnos Paşa tarafından yaptırılan, Balıkesir'in merkezindeki en büyük ve tarihi öneme sahip Osmanlı kompleksi.",
+                type: "Osmanlı Dönemi (15. yy)"
+            },
+            { 
+                name: "Antandros Antik Kenti", 
+                lat: 39.5716, 
+                lng: 26.7863,
+                description: "Kaz Dağları eteklerinde, Edremit yakınlarında yer alan, antik dönemde gemi yapımı ve kereste ticaretiyle ünlü liman kenti.",
+                type: "Antik Dönem (MÖ 7. yy)"
+            },
+            { 
+                name: "Dezgahlı Camii", 
+                lat: 39.6489, 
+                lng: 27.8885,
+                description: "Balıkesir'de Karesi Beyliği döneminden kalma, Anadolu Türk mimarisinin erken dönem örneklerinden biri olan tarihi cami.",
+                type: "Beylikler Dönemi (14. yy)"
+            }
+        ];
+
+        // 2. Haritayı başlatma (Balıkesir il sınırlarını kapsayacak şekilde ayarlandı)
+        var cityMap = L.map('map-city').setView([39.8, 28.0], 9);
+
+        // 3. Harita karolarını ekleme
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(cityMap);
+
+        // 4. Dinamik Yapı Listesi Yükleme ve Marker Ekleme
+        var listDiv = document.getElementById('info-panel');
+        
+        tarihi_yapilar.forEach(function(yapi) {
+            // Marker Ekleme
+            var marker = L.marker([yapi.lat, yapi.lng]).addTo(cityMap);
+            
+            marker.bindPopup("<b>" + yapi.name + "</b><br>" + yapi.type);
+
+            // Yapı Kartını Oluşturma
+            var card = document.createElement('div');
+            card.className = 'structure-card';
+            card.innerHTML = 
+                '<h2>' + yapi.name + '</h2>' +
+                '<p><strong>Dönem/Tip:</strong> ' + yapi.type + '</p>' +
+                '<p>' + yapi.description + '</p>';
+            
+            listDiv.querySelector('#structure-list').appendChild(card);
+            
+            // Kart üzerine tıklandığında haritada ilgili noktaya gitme
+            card.addEventListener('click', function() {
+                cityMap.setView([yapi.lat, yapi.lng], 13); 
+                marker.openPopup();
+            });
+        });
+
+    </script>
+    
+</body>
+</html>
