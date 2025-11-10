@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sakarya Tarihi Yapıları Haritası</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #container { display: flex; height: 100vh; }
+        #map-city { flex: 3; } 
+        #info-panel { flex: 1; padding: 20px; overflow-y: auto; background-color: #f8f8f8; border-left: 1px solid #ddd; }
+        h1 { margin-top: 0; color: #5c6bc0; } 
+        h2 { color: #8c9eff; }
+        .back-button { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            z-index: 1000; 
+            background: #fff; 
+            padding: 10px 15px; 
+            border-radius: 5px; 
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+        .structure-card { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 5px; cursor: pointer; transition: background-color 0.2s; }
+        .structure-card:hover { background-color: #e8eaf6; }
+    </style>
+</head>
+<body>
+    <a href="marmara.html" class="back-button">← Marmara Bölgesine Dön</a> 
+
+    <div id="container">
+        <div id="map-city"></div>
+
+        <div id="info-panel">
+            <h1>Sakarya Tarihi Yapıları Haritası</h1>
+            <p>Tarihi ipek yolu üzerinde yer alan ve önemli Bizans eserlerine ev sahipliği yapan Sakarya'nın kültürel noktalarını keşfedin.</p>
+            <hr>
+            <div id="structure-list">
+                </div>
+            
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        // 1. Tarihi ve Kültürel Yapıların Verisini Tanımlama (Koordinatlar GÜNCELLENDİ, Müze KALDIRILDI)
+        var tarihi_yapilar = [
+            { 
+                name: "Justinianus Köprüsü (Beşköprü)", 
+                lat: 40.7373, // GÜNCELLENDİ
+                lng: 30.3725, // GÜNCELLENDİ
+                description: "Bizans İmparatoru Justinianus tarafından yaptırılan, 12 kemerli, 429 metre uzunluğundaki görkemli tarihi köprü.",
+                type: "Bizans Dönemi (6. yy)"
+            },
+            { 
+                name: "Harmantepe Kalesi", 
+                lat: 40.8906, // GÜNCELLENDİ
+                lng: 30.4362, // GÜNCELLENDİ
+                description: "Karadeniz kıyısında, Karasu ilçesi yakınlarında bulunan ve Bizans döneminde Karadeniz ticaret yolunu korumak amacıyla inşa edilmiş kale.",
+                type: "Bizans Dönemi (Ortaçağ)"
+            }
+        ];
+
+        // 2. Haritayı başlatma (Yeni koordinatları kapsayacak şekilde merkeze ayarlandı)
+        var cityMap = L.map('map-city').setView([40.81, 30.40], 12);
+
+        // 3. Harita karolarını ekleme
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(cityMap);
+
+        // 4. Dinamik Yapı Listesi Yükleme ve Marker Ekleme
+        var listDiv = document.getElementById('info-panel');
+        
+        tarihi_yapilar.forEach(function(yapi) {
+            // Marker Ekleme
+            var marker = L.marker([yapi.lat, yapi.lng]).addTo(cityMap);
+            
+            marker.bindPopup("<b>" + yapi.name + "</b><br>" + yapi.type);
+
+            // Yapı Kartını Oluşturma
+            var card = document.createElement('div');
+            card.className = 'structure-card';
+            card.innerHTML = 
+                '<h2>' + yapi.name + '</h2>' +
+                '<p><strong>Dönem/Tip:</strong> ' + yapi.type + '</p>' +
+                '<p>' + yapi.description + '</p>';
+            
+            listDiv.querySelector('#structure-list').appendChild(card);
+            
+            // Kart üzerine tıklandığında haritada ilgili noktaya gitme
+            card.addEventListener('click', function() {
+                cityMap.setView([yapi.lat, yapi.lng], 14); 
+                marker.openPopup();
+            });
+        });
+
+    </script>
+    
+</body>
+</html>
