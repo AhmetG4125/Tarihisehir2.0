@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doğu Anadolu Bölgesi Tarihi Haritası</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #container { display: flex; height: 100vh; }
+        #map-doguanadolu { flex: 2; } 
+        #sidebar { flex: 1; padding: 20px; overflow-y: auto; background-color: #f8f8f8; border-left: 1px solid #ddd; }
+        h1 { margin-top: 0; color: #5c6bc0; } /* Doğu için lacivert/mor tonu */
+        h2 { color: #8c9eff; }
+        .back-button { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            z-index: 1000; 
+            background: #fff; 
+            padding: 10px 15px; 
+            border-radius: 5px; 
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+        #il-detay-alani { border-top: 2px solid #ccc; padding-top: 15px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-button">← Ana Haritaya Dön</a>
+
+    <div id="container">
+        <div id="map-doguanadolu"></div>
+
+        <div id="sidebar">
+            <h1>Doğu Anadolu Bölgesi Tarihi</h1>
+            <p><strong>Bölge Kapsamındaki İller:</strong> Erzurum, Erzincan, Malatya, Elazığ, Ağrı, Kars, Ardahan, Iğdır, Van, Muş, Bitlis, Hakkari, Bingöl, Tunceli.</p>
+            <hr>
+            <h2>Bölgeye Genel Bakış</h2>
+            <p>Urartu Krallığı'nın merkezi, Selçuklu ve Osmanlı ordularının önemli karargahları olan Doğu Anadolu, sert coğrafyasına rağmen birçok medeniyete kucak açmıştır. Bölge aynı zamanda Türk ve dünya tarihi için kritik savaşlara sahne olmuştur.</p>
+            <p style="font-style: italic; color: #388e3c;">Haritadaki bir ilin noktasına tıklayarak o ilin detaylı tarihi bilgilerini görüntüleyin.</p>
+            
+            <div id="il-detay-alani">
+                <h2>Lütfen Bir İl Seçiniz</h2>
+                <p>Seçtiğiniz ilin tarihi, önemli yapıları ve projenizdeki yeri bu alanda gösterilecektir.</p>
+            </div>
+            </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        // 1. İllerin Verisini ve Tarihsel İçeriğini Tanımlama
+        var doguanadolu_iller = [
+            { 
+                name: "Van", lat: 38.4833, lng: 43.3833,
+                tarih_baslik: "Urartu Krallığı'nın Başkenti (Tuşpa)",
+                tarih_icerik: "<p>Urartu Krallığı'nın başkenti olan Tuşpa'ya ev sahipliği yapmıştır. Van Kalesi, bu büyük krallığın en önemli kalıntısıdır. Tarih boyunca önemli bir medeniyet ve kültür merkezidir.</p><h3>Önemli Yapılar:</h3><ul><li>Van Kalesi</li><li>Akdamar Adası ve Kilisesi</li><li>Hoşap Kalesi</li></ul>"
+            },
+            { 
+                name: "Erzurum", lat: 39.9087, lng: 41.2774,
+                tarih_baslik: "İpek Yolu Durağı ve Selçuklu Merkezi",
+                tarih_icerik: "<p>Anadolu'nun en eski yerleşim yerlerinden biri olan Erzurum, İpek Yolu üzerinde önemli bir duraktı. Selçuklu mimarisinin çarpıcı örneklerine sahiptir. Kurtuluş Savaşı'ndaki Erzurum Kongresi ile de tarihte önemli bir yere sahiptir.</p><h3>Önemli Yapılar:</h3><ul><li>Çifte Minareli Medrese</li><li>Yakutiye Medresesi</li></ul>"
+            },
+            { name: "Malatya", lat: 38.3556, lng: 38.3083,
+                tarih_baslik: "Hitit ve Roma Tarihi",
+                tarih_icerik: "<p>Hitit döneminde önemli bir yerleşim yeri olan Malatya, Roma İmparatorluğu döneminde stratejik bir merkez (Melitene) olarak kullanılmıştır. Fırat Nehri'ne yakınlığı önemlidir.</p>"
+            },
+            { name: "Elazığ", lat: 38.6833, lng: 39.2167,
+                tarih_baslik: "Harput ve Urartu Kalıntıları",
+                tarih_icerik: "<p>Elazığ'ın tarihi, Urartulara dayanan Harput yerleşimi etrafında yoğunlaşır. Tarihi Harput Kalesi bölgenin en önemli yapısıdır.</p>"
+            },
+            { name: "Kars", lat: 40.6061, lng: 43.0886, tarih_baslik: "Kars Kalesi ve Kafkas Tarihi", tarih_icerik: "<p>Doğu Anadolu'nun en uç noktasında yer alır ve Kafkas kültürü ile iç içedir. Kars Kalesi ve Ani Harabeleri (UNESCO) gibi yapılar Ermeni, Selçuklu ve Osmanlı izlerini taşır.</p>" },
+            { name: "Erzincan", lat: 39.7500, lng: 39.5000, tarih_baslik: "İpek Yolu ve Geçit Noktası", tarih_icerik: "<p>Anadolu'nun iç kesimlerinden doğuya geçişte önemli bir kavşak noktasıdır. Tarih boyunca ticaret ve askeri açıdan stratejik öneme sahipti.</p>" },
+            { name: "Muş", lat: 38.7333, lng: 41.5000, tarih_baslik: "Malazgirt ve Tarihi Ovada Yaşam", tarih_icerik: "<p>Malazgirt Ovası'na yakınlığı nedeniyle 1071 Malazgirt Savaşı'na giden süreçte ve sonrasında önemli bir rol oynamıştır.</p>" },
+            { name: "Ağrı", lat: 39.7167, lng: 43.0500, tarih_baslik: "İshak Paşa Sarayı ve Ağrı Dağı", tarih_icerik: "<p>Bünyesinde Nuh'un Gemisi efsanesiyle anılan Ağrı Dağı'nı barındırır. Doğubayazıt'taki görkemli İshak Paşa Sarayı, bölgenin en önemli tarihi eseridir.</p>" },
+            { name: "Bitlis", lat: 38.4000, lng: 42.1000, tarih_baslik: "Bitlis Kalesi ve Osmanlı Yapıları", tarih_icerik: "<p>Tarih boyunca yerleşim görmüş, Osmanlı döneminde önemli bir eyalet merkezi olmuştur. Bitlis Kalesi ve tarihi evleri dikkat çeker.</p>" },
+            { name: "Hakkari", lat: 37.5833, lng: 44.0000, tarih_baslik: "Nesturi ve Tarihi Dağlık Bölge", tarih_icerik: "<p>Oldukça dağlık bir coğrafyaya sahiptir. Tarihte Nesturi Hristiyanlığının önemli merkezlerinden biri olmuştur. Tarihi yapılar genellikle dağ eteklerine yayılmıştır.</p>" },
+            { name: "Bingöl", lat: 38.8833, lng: 40.4833, tarih_baslik: "Bingöl Tarihi", tarih_icerik: "<p>Yüksek yaylaları ve sert iklimiyle bilinen Bingöl, eski çağlardan beri göç yolları üzerinde yer almıştır.</p>" },
+            { name: "Tunceli", lat: 39.1000, lng: 39.5000, tarih_baslik: "Dersim ve Etno-kültürel Miras", tarih_icerik: "<p>Tarihi Dersim bölgesinin bir parçasıdır. Bölgenin kendine has etno-kültürel yapısı ve Munzur Vadisi milli parkı ile bilinir.</p>" },
+            { name: "Ardahan", lat: 41.1167, lng: 42.7000, tarih_baslik: "Ardahan Kalesi ve Sınır Bölgesi", tarih_icerik: "<p>Kafkasya'ya açılan bir kapı konumundadır. Ardahan Kalesi gibi sınır savunma yapıları tarihsel önemini gösterir.</p>" },
+            { name: "Iğdır", lat: 39.9333, lng: 44.0333, tarih_baslik: "Ağrı Dağı'nın Eteği ve Farklı Kültürler", tarih_icerik: "<p>Türkiye'nin üç ülke ile (Ermenistan, Nahçıvan, İran) sınırının kesiştiği tek ildir. Farklı kültürlerin etkileşim alanıdır.</p>" }
+        ];
+
+        // 2. Haritayı başlatma
+        // [39.5, 41.5] Doğu Anadolu Bölgesi merkezine yakın bir koordinat
+        var doguanadoluMap = L.map('map-doguanadolu').setView([39.5, 41.5], 6);
+
+        // 3. Harita karolarını ekleme
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(doguanadoluMap);
+
+        // 4. Dinamik İçerik Yükleme Fonksiyonu
+        function loadCityDetails(ilData) {
+            var detailsDiv = document.getElementById('il-detay-alani');
+            
+            detailsDiv.innerHTML = 
+                '<h2>' + ilData.name + ' Detaylı Bilgiler</h2>' +
+                '<h3>' + ilData.tarih_baslik + '</h3>' +
+                ilData.tarih_icerik;
+        }
+
+        // 5. Bölgedeki her il için nokta (marker) ekleme ve tıklama olayı bağlama
+        doguanadolu_iller.forEach(function(il) {
+            var marker = L.marker([il.lat, il.lng]).addTo(doguanadoluMap);
+            
+            marker.bindPopup("<b>" + il.name + "</b><br>Detayları görmek için tıkla.");
+            
+            marker.on('click', function(e) {
+                loadCityDetails(il);
+                // Tıklanan ilin merkezine zoom yapma
+                doguanadoluMap.setView(e.latlng, 7); 
+            });
+        });
+
+        // Sayfa yüklendiğinde varsayılan olarak Van'ın bilgilerini göster
+        loadCityDetails(doguanadolu_iller[0]); 
+    </script>
+    
+</body>
+</html>
