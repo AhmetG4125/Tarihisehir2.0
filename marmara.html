@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marmara Bölgesi Tarihi Haritası</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #container { display: flex; height: 100vh; }
+        #map-marmara { flex: 2; } 
+        #sidebar { flex: 1; padding: 20px; overflow-y: auto; background-color: #f8f8f8; border-left: 1px solid #ddd; }
+        h1 { margin-top: 0; color: #00897b; } /* Marmara için turkuaz tonları */
+        h2 { color: #26a69a; }
+        .back-button { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            z-index: 1000; 
+            background: #fff; 
+            padding: 10px 15px; 
+            border-radius: 5px; 
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+        #il-detay-alani { border-top: 2px solid #ccc; padding-top: 15px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-button">← Ana Haritaya Dön</a>
+
+    <div id="container">
+        <div id="map-marmara"></div>
+
+        <div id="sidebar">
+            <h1>Marmara Bölgesi Tarihi</h1>
+            <p><strong>Bölge Kapsamındaki İller:</strong> İstanbul, Bursa, Kocaeli, Sakarya, Balıkesir, Çanakkale, Tekirdağ, Edirne, Kırklareli, Yalova, Bilecik.</p>
+            <hr>
+            <h2>Bölgeye Genel Bakış</h2>
+            <p>Dünya tarihi açısından kilit öneme sahip olan İstanbul'un da içinde bulunduğu bölge, Trakya ve Bithynia medeniyetlerine ev sahipliği yapmıştır. Roma ve Bizans İmparatorluklarının merkezi olmuş, Osmanlı İmparatorluğu'nun kuruluşuna ve başkentlik dönemine tanıklık etmiştir.</p>
+            <p style="font-style: italic; color: #388e3c;">Haritadaki bir ilin noktasına tıklayarak o ilin tarihi bilgilerini ve detay harita bağlantısını görüntüleyin.</p>
+            
+            <div id="il-detay-alani">
+                <h2>Lütfen Bir İl Seçiniz</h2>
+                <p>Seçtiğiniz ilin tarihi, önemli yapıları ve detay harita bağlantısı bu alanda gösterilecektir.</p>
+            </div>
+            </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        // 1. İllerin Verisini ve Tarihsel İçeriğini Tanımlama
+        var marmara_iller = [
+            { 
+                name: "İstanbul", slug: "istanbul_tarihi", lat: 41.0082, lng: 28.9784, 
+                tarih_baslik: "İmparatorlukların Başkenti", 
+                tarih_icerik: "<p>Byzantion, Konstantinopolis ve İstanbul. Ayasofya, Topkapı Sarayı, tarihi surlar ve sayısız medeniyet mirasına sahip dünya şehri.</p>"
+            },
+            { 
+                name: "Bursa", slug: "bursa_tarihi", lat: 40.1885, lng: 29.0566,
+                tarih_baslik: "Osmanlı'nın İlk Başkenti",
+                tarih_icerik: "<p>Osmanlı İmparatorluğu'nun ilk başkenti. Ulu Camii, Yeşil Türbe ve Cumalıkızık Köyü (UNESCO) gibi eserlerle erken Osmanlı mimarisinin merkezidir.</p>"
+            },
+            { 
+                name: "Çanakkale", slug: "canakkale_tarihi", lat: 40.1540, lng: 26.4141,
+                tarih_baslik: "Truva ve Çanakkale Savaşları",
+                tarih_icerik: "<p>Efsanevi Truva Antik Kenti (UNESCO) ve I. Dünya Savaşı'nda kritik öneme sahip Çanakkale cephesine ev sahipliği yapar. Helenistik ve Roma kalıntıları boldur.</p>"
+            },
+            { 
+                name: "Edirne", slug: "edirne_tarihi", lat: 41.6700, lng: 26.5600,
+                tarih_baslik: "Osmanlı'nın İkinci Başkenti",
+                tarih_icerik: "<p>Osmanlı'nın İstanbul'dan önceki ikinci başkenti. Mimar Sinan'ın 'ustalık eseri' Selimiye Camii (UNESCO) bu şehirdedir.</p>"
+            },
+            { 
+                name: "Balıkesir", slug: "balikesir_tarihi", lat: 39.6534, lng: 27.8927,
+                tarih_baslik: "Misia ve Kyzikos",
+                tarih_icerik: "<p>Antik Misia bölgesinde yer alır. Özellikle Bandırma yakınlarındaki Kyzikos Antik Kenti'nin kalıntıları önemlidir.</p>"
+            },
+            { 
+                name: "Kocaeli", slug: "kocaeli_tarihi", lat: 40.7656, lng: 29.9400,
+                tarih_baslik: "Nicomedia ve Tarihi Liman",
+                tarih_icerik: "<p>İzmit, Roma döneminde İmparator Diocletianus'un başkenti Nicomedia'nın kurulduğu yerdir. Önemli tarihi ve ticari bir geçiş noktasıdır.</p>"
+            },
+            { 
+                name: "Sakarya", slug: "sakarya_tarihi", lat: 40.7725, lng: 30.4000,
+                tarih_baslik: "Justinianus Köprüsü ve Bithynia",
+                tarih_icerik: "<p>Sakarya Nehri üzerindeki Roma İmparatoru Justinianus döneminden kalma tarihi köprü ve çevresindeki Bithynia kalıntıları ile bilinir.</p>"
+            },
+            { 
+                name: "Tekirdağ", slug: "tekirdag_tarihi", lat: 40.9833, lng: 27.5167,
+                tarih_baslik: "Rodosçuk ve Trakya Mirası",
+                tarih_icerik: "<p>Antik adıyla Rodosçuk olan şehir. Trakya bölgesinin tarihinde önemli bir rol oynamış, Osmanlı döneminde de stratejik bir liman olmuştur.</p>"
+            },
+            { 
+                name: "Kırklareli", slug: "kirklareli_tarihi", lat: 41.7667, lng: 27.2167,
+                tarih_baslik: "Vize ve Mağara Kiliseleri",
+                tarih_icerik: "<p>Antik Vize şehri ve özellikle Dupnisa Mağarası yakınlarındaki Bizans dönemi kaya kiliseleri gibi Trakya tarihi kalıntılarına sahiptir.</p>"
+            },
+            { 
+                name: "Yalova", slug: "yalova_tarihi", lat: 40.6500, lng: 29.2700,
+                tarih_baslik: "Roma ve Osmanlı Termalleri",
+                tarih_icerik: "<p>Özellikle termal kaynakları ile Roma ve Bizans'tan bu yana önemli bir sağlık merkezi olmuştur. Atatürk'ün de kullandığı tarihi köşkler bulunur.</p>"
+            },
+            { 
+                name: "Bilecik", slug: "bilecik_tarihi", lat: 40.1420, lng: 30.0105,
+                tarih_baslik: "Ertuğrul Gazi ve Osmanlı'nın Kuruluşu",
+                tarih_icerik: "<p>Osmanlı Devleti'nin kurulduğu toprakların merkezinde yer alır. Söğüt ve Ertuğrul Gazi Türbesi gibi kuruluş dönemi eserleriyle önemlidir.</p>"
+            }
+        ];
+
+        // 2. Haritayı başlatma (Marmara Bölgesi merkezli ayarlandı)
+        var marmaraMap = L.map('map-marmara').setView([40.7, 29.0], 8);
+
+        // 3. Harita karolarını ekleme
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(marmaraMap);
+
+        // 4. Dinamik İçerik Yükleme Fonksiyonu
+        function loadCityDetails(ilData) {
+            var detailsDiv = document.getElementById('il-detay-alani');
+            
+            detailsDiv.innerHTML = 
+                '<h2>' + ilData.name + ' Detaylı Bilgiler</h2>' +
+                '<h3>' + ilData.tarih_baslik + '</h3>' +
+                ilData.tarih_icerik;
+
+            // Detay haritası olan iller (TÜM MARMARA İLLERİ AKTİF EDİLDİ)
+            const detayliIller = ["İstanbul", "Bursa", "Çanakkale", "Edirne", "Balıkesir", "Kocaeli", "Sakarya", "Tekirdağ", "Kırklareli", "Yalova", "Bilecik"];
+
+            if (ilData.slug && detayliIller.includes(ilData.name)) {
+                detailsDiv.innerHTML += 
+                    '<p style="margin-top: 15px;">' +
+                    '<a href="' + ilData.slug + '.html" style="background-color: #00897b; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">' +
+                    ilData.name + ' Detay Haritasına Git &rarr;' +
+                    '</a></p>';
+            } else {
+                 detailsDiv.innerHTML += '<p style="margin-top: 15px; color: #ff9800;">Detay haritası yüklenemedi veya link bilgisi eksik.</p>';
+            }
+        }
+
+        // 5. Bölgedeki her il için nokta (marker) ekleme ve tıklama olayı bağlama
+        marmara_iller.forEach(function(il) {
+            const detayliIller = ["İstanbul", "Bursa", "Çanakkale", "Edirne", "Balıkesir", "Kocaeli", "Sakarya", "Tekirdağ", "Kırklareli", "Yalova", "Bilecik"]; 
+
+            var marker = L.marker([il.lat, il.lng]).addTo(marmaraMap);
+            
+            var popupContent = "<b>" + il.name + "</b><br>";
+
+            if (il.slug && detayliIller.includes(il.name)) {
+                 popupContent += '<a href="' + il.slug + '.html" style="color: #00897b; font-weight: bold; text-decoration: none;">Tarihi Yapıları Haritada Gör &rarr;</a>'; 
+            } else {
+                 popupContent += 'Detay haritası beklemede.'; // Bu kısım artık hiç görünmemeli
+            }
+
+            marker.bindPopup(popupContent, {
+                closeButton: true,
+                autoClose: false, 
+                closeOnClick: false 
+            });
+            
+            marker.on('click', function(e) {
+                loadCityDetails(il);
+                // Tıklanan ilin merkezine zoom yapma
+                marmaraMap.setView(e.latlng, 9); 
+                marker.openPopup(); 
+            });
+        });
+
+        // Sayfa yüklendiğinde varsayılan olarak İstanbul'un bilgilerini göster
+        loadCityDetails(marmara_iller[0]); 
+    </script>
+    
+</body>
+</html>
