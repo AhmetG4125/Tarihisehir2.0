@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İç Anadolu Bölgesi Tarihi Haritası</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #container { display: flex; height: 100vh; }
+        #map-icanadolu { flex: 2; }
+        #sidebar { flex: 1; padding: 20px; overflow-y: auto; background-color: #f8f8f8; border-left: 1px solid #ddd; }
+        h1 { margin-top: 0; color: #795548; } 
+        h2 { color: #5d4037; }
+        .back-button { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            z-index: 1000; 
+            background: #fff; 
+            padding: 10px 15px; 
+            border-radius: 5px; 
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+        /* Dinamik olarak yüklenecek detay alanı gizlenir */
+        #il-detay-alani { border-top: 2px solid #ccc; padding-top: 15px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-button">← Ana Haritaya Dön</a>
+
+    <div id="container">
+        <div id="map-icanadolu"></div>
+
+        <div id="sidebar">
+            <h1>İç Anadolu Bölgesi Tarihi</h1>
+            <p><strong>Bölge Kapsamındaki İller:</strong> Ankara, Konya, Kayseri, Sivas, Yozgat, Kırşehir, Nevşehir, Niğde, Aksaray, Karaman, Kırıkkale, Çankırı.</p>
+            <hr>
+            <h2>Bölgeye Genel Bakış</h2>
+            <p>Anadolu medeniyetlerinin kalbi olan İç Anadolu, Hititler'den Selçuklular'a ve Türkiye Cumhuriyeti'nin kuruluşuna kadar stratejik bir merkez olmuştur.</p>
+            <p style="font-style: italic; color: #388e3c;">Haritadaki bir ilin noktasına tıklayarak o ilin detaylı tarihi bilgilerini görüntüleyin.</p>
+            
+            <div id="il-detay-alani">
+                <h2>Lütfen Bir İl Seçiniz</h2>
+                <p>Seçtiğiniz ilin tarihi, önemli yapıları ve projenizdeki yeri bu alanda gösterilecektir.</p>
+            </div>
+            </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        // 1. İllerin Verisini ve Tarihsel İçeriğini Tanımlama
+        // name: Marker üzerinde görünecek isim
+        // lat, lng: Harita koordinatları
+        // tarih_baslik: Sağ panelin alt başlığı
+        // tarih_icerik: Sağ panelde gösterilecek detaylı HTML içerik
+        var icanadolu_iller = [
+            { 
+                name: "Ankara", lat: 39.9334, lng: 32.8597,
+                tarih_baslik: "Türkiye Cumhuriyeti'nin Merkezi",
+                tarih_icerik: "<p>Kurtuluş Savaşı'nın karargahı ve 1923'ten beri Türkiye'nin başkentidir. Tarihte Frigya ve Galatya medeniyetlerine ev sahipliği yapmıştır.</p><h3>Önemli Yapılar:</h3><ul><li>Anıtkabir</li><li>Anadolu Medeniyetleri Müzesi</li><li>Ankara Kalesi</li></ul>"
+            },
+            { 
+                name: "Konya", lat: 37.8746, lng: 32.4932,
+                tarih_baslik: "Selçuklu Başkenti ve Mevlana Şehri",
+                tarih_icerik: "<p>Anadolu Selçuklu Devleti'nin başkenti ve önemli bir ticaret merkeziydi. Mevlana Celaleddin Rumi'nin türbesi nedeniyle manevi açıdan büyük öneme sahiptir.</p><h3>Önemli Yapılar:</h3><ul><li>Mevlana Müzesi</li><li>Alaeddin Camii</li><li>Çatalhöyük Neolitik Kenti (dünya mirası)</li></ul>"
+            },
+            { 
+                name: "Kayseri", lat: 38.7322, lng: 35.4880,
+                tarih_baslik: "Kültepe ve Erciyes'in Gölgesinde",
+                tarih_icerik: "<p>Kayseri, özellikle Kültepe (Kanesh) antik kenti ile Asur Ticaret Kolonileri döneminde Anadolu'nun en önemli ticaret merkezlerinden biriydi. Erciyes Dağı volkanik yapısıyla dikkat çeker.</p>"
+            },
+            { 
+                name: "Sivas", lat: 39.7468, lng: 37.0183,
+                tarih_baslik: "Sivas Kongresi ve Tarihi Dokusu",
+                tarih_icerik: "<p>1919'daki Sivas Kongresi ile Kurtuluş Savaşı'nın kaderini belirleyen şehirlerden biridir. Selçuklu ve Osmanlı dönemi eserleriyle zengin bir tarihi mirasa sahiptir.</p>"
+            },
+            { name: "Nevşehir", lat: 38.6254, lng: 34.8078,
+                tarih_baslik: "Kapadokya: Peribacaları ve Yeraltı Şehirleri",
+                tarih_icerik: "<p>Volkanik oluşumu ve erozyonla şekillenmiş peribacaları ile ünlüdür. Roma döneminde Hristiyanların sığınakları olan yeraltı şehirleri, bölgenin tarihi önemini gösterir.</p>"
+            },
+            { name: "Yozgat", lat: 39.8167, lng: 34.8000, tarih_baslik: "Yozgat Tarihi", tarih_icerik: "<p>Yozgat ve çevresi, Hititler döneminden itibaren yerleşim görmüştür. Çapanoğlu ayaklanması gibi yakın dönem olaylarıyla da anılır.</p>" },
+            { name: "Kırşehir", lat: 39.1437, lng: 34.1622, tarih_baslik: "Ahi Evran ve Mevlevilik Etkisi", tarih_icerik: "<p>Ahilik teşkilatının kurucusu Ahi Evran'ın yaşadığı yerdir. Kültürel ve tasavvufi açıdan önemli bir merkezdir.</p>" },
+            { name: "Niğde", lat: 37.9667, lng: 34.6667, tarih_baslik: "Niğde Tarihi", tarih_icerik: "<p>Önemli bir geçiş güzergahında bulunması nedeniyle birçok medeniyete ev sahipliği yapmıştır. Roma ve Bizans kalıntıları mevcuttur.</p>" },
+            { name: "Aksaray", lat: 38.3667, lng: 34.0333, tarih_baslik: "Aksaray Tarihi", tarih_icerik: "<p>Selçuklu döneminde kervansarayları ile önemli bir durak olmuştur. Ihlara Vadisi gibi doğal ve tarihi güzelliklere sahiptir.</p>" },
+            { name: "Karaman", lat: 37.1706, lng: 33.2356, tarih_baslik: "Karamanoğulları Beyliği Başkenti", tarih_icerik: "<p>Anadolu Beylikleri döneminde Karamanoğulları'na başkentlik yapmıştır. Türkçeyi resmi dil ilan eden ilk beylik olmasıyla bilinir.</p>" },
+            { name: "Kırıkkale", lat: 39.8492, lng: 33.5133, tarih_baslik: "Kırıkkale Tarihi", tarih_icerik: "<p>Cumhuriyet dönemi ile birlikte sanayide öne çıkmıştır. Daha eski dönemlere ait yerleşim kalıntıları da bulunur.</p>" },
+            { name: "Çankırı", lat: 40.6000, lng: 33.6167, tarih_baslik: "Çankırı Tarihi", tarih_icerik: "<p>Kalkolitik döneme kadar uzanan yerleşim geçmişi vardır. Tarihi kaya tuzlası ve kalesi önemlidir.</p>" }
+        ];
+
+        // 2. Haritayı başlatma
+        var icanadoluMap = L.map('map-icanadolu').setView([39.00, 34.00], 6);
+
+        // 3. Harita karolarını ekleme
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(icanadoluMap);
+
+        // 4. Dinamik İçerik Yükleme Fonksiyonu
+        function loadCityDetails(ilData) {
+            // Sağdaki div'i bulma
+            var detailsDiv = document.getElementById('il-detay-alani');
+            
+            // İçeriği güncelleyen HTML yapısı
+            detailsDiv.innerHTML = 
+                '<h2>' + ilData.name + ' Detaylı Bilgiler</h2>' +
+                '<h3>' + ilData.tarih_baslik + '</h3>' +
+                ilData.tarih_icerik;
+        }
+
+        // 5. Bölgedeki her il için nokta (marker) ekleme ve tıklama olayı bağlama
+        icanadolu_iller.forEach(function(il) {
+            var marker = L.marker([il.lat, il.lng]).addTo(icanadoluMap);
+            
+            // Marker üzerine gelince görünecek bilgi kutusu
+            marker.bindPopup("<b>" + il.name + "</b><br>Detayları görmek için tıkla.");
+            
+            // Tıklama olayını bağlama: loadCityDetails fonksiyonunu çağır
+            marker.on('click', function(e) {
+                loadCityDetails(il);
+                // İsteğe bağlı: Tıklanan ilin merkezine zoom yapma
+                icanadoluMap.setView(e.latlng, 8); 
+            });
+        });
+
+        // Sayfa yüklendiğinde varsayılan olarak Ankara'nın bilgilerini göster
+        loadCityDetails(icanadolu_iller[0]); 
+    </script>
+    
+</body>
+</html>
