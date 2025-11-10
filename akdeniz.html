@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akdeniz Bölgesi Tarihi Haritası</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #container { display: flex; height: 100vh; }
+        #map-akdeniz { flex: 2; } 
+        #sidebar { flex: 1; padding: 20px; overflow-y: auto; background-color: #f8f8f8; border-left: 1px solid #ddd; }
+        h1 { margin-top: 0; color: #d32f2f; } /* Akdeniz için kırmızı tonları */
+        h2 { color: #e57373; }
+        .back-button { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            z-index: 1000; 
+            background: #fff; 
+            padding: 10px 15px; 
+            border-radius: 5px; 
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+        #il-detay-alani { border-top: 2px solid #ccc; padding-top: 15px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-button">← Ana Haritaya Dön</a>
+
+    <div id="container">
+        <div id="map-akdeniz"></div>
+
+        <div id="sidebar">
+            <h1>Akdeniz Bölgesi Tarihi</h1>
+            <p><strong>Bölge Kapsamındaki İller:</strong> Antalya, Mersin, Adana, Hatay, Isparta, Burdur, Kahramanmaraş, Osmaniye.</p>
+            <hr>
+            <h2>Bölgeye Genel Bakış</h2>
+            <p>Antik Likya, Pamphylia, Kilikya, Pisidya gibi medeniyetlere ev sahipliği yapmıştır. Roma döneminin en görkemli yapıları ve Erken Hristiyanlık tarihinin önemli merkezleri bu bölgede yer alır. Bölge, Haçlı Seferleri ve Selçuklu/Osmanlı akınları sırasında stratejik önemini korumuştur.</p>
+            <p style="font-style: italic; color: #388e3c;">Haritadaki bir ilin noktasına tıklayarak o ilin tarihi bilgilerini ve detay harita bağlantısını görüntüleyin.</p>
+            
+            <div id="il-detay-alani">
+                <h2>Lütfen Bir İl Seçiniz</h2>
+                <p>Seçtiğiniz ilin tarihi, önemli yapıları ve projenizdeki yeri bu alanda gösterilecektir.</p>
+            </div>
+            </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        // 1. İllerin Verisini ve Tarihsel İçeriğini Tanımlama
+        var akdeniz_iller = [
+            { 
+                name: "Antalya", slug: "antalya_tarihi", lat: 36.8969, lng: 30.7133, 
+                tarih_baslik: "Pamphylia ve Likya'nın Merkezi", 
+                tarih_icerik: "<p>Perge, Aspendos, Side gibi en iyi korunmuş antik kentlere ve Likya Yolu'na ev sahipliği yapar. Kaleiçi (eski şehir) tarihi dokusunu korur.</p>"
+            },
+            { 
+                name: "Mersin", slug: "mersin_tarihi", lat: 36.8121, lng: 34.6415,
+                tarih_baslik: "Tarsus ve Kilikya'nın Kapısı",
+                tarih_icerik: "<p>St. Paul'ün doğum yeri olan Tarsus antik kentine, Cennet-Cehennem Obruklarına ve Kızkalesi'ne sahiptir. Kilikya'nın tarih boyunca önemli liman kentidir.</p>"
+            },
+            { 
+                name: "Adana", slug: "adana_tarihi", lat: 37.0000, lng: 35.3253,
+                tarih_baslik: "Taşköprü ve Roma Mirası",
+                tarih_icerik: "<p>Seyhan Nehri üzerindeki Roma dönemi eseri Taşköprü ve Kilikya'nın önemli yerleşimlerinden Anavarza Antik Kenti ile öne çıkar.</p>"
+            },
+            { 
+                name: "Hatay", slug: "hatay_tarihi", lat: 36.2000, lng: 36.1667,
+                tarih_baslik: "Antakya ve Erken Hristiyanlık Merkezi",
+                tarih_icerik: "<p>Antakya, Roma döneminin en büyük 3. kentiydi ve Erken Hristiyanlık için kilit rol oynadı (St. Pierre Kilisesi). Dünyanın en büyük mozaik koleksiyonlarından birine sahiptir.</p>"
+            },
+            { 
+                name: "Isparta", slug: "isparta_tarihi", lat: 37.7648, lng: 30.5566,
+                tarih_baslik: "Pisidya ve Gülün Tarihi",
+                tarih_icerik: "<p>Antik Pisidya bölgesinin merkezi olan il, özellikle Pisidia Antiocheia Antik Kenti ve Eğirdir Gölü çevresindeki tarihi kalıntılarıyla önemlidir.</p>"
+            },
+            { 
+                name: "Burdur", slug: "burdur_tarihi", lat: 37.4500, lng: 30.0833,
+                tarih_baslik: "Sagalassos ve Kibyra",
+                tarih_icerik: "<p>Bölgenin en önemli antik kentlerinden olan Sagalassos ve Kibyra'ya ev sahipliği yapar. Özellikle Sagalassos'taki Antoninler Çeşmesi ünlüdür.</p>"
+            },
+            { 
+                name: "Kahramanmaraş", slug: "kahramanmaras_tarihi", lat: 37.5833, lng: 36.9333,
+                tarih_baslik: "Germenicia ve Milli Mücadele Ruhu",
+                tarih_icerik: "<p>Germenicia Antik Kenti'nin zengin Roma mozaikleri ve Kurtuluş Savaşı'ndaki 'Maraş Savunması' ile ün salmıştır.</p>"
+            },
+            { 
+                name: "Osmaniye", slug: "osmaniye_tarihi", lat: 37.0768, lng: 36.2163,
+                tarih_baslik: "Karatepe-Aslantaş ve Hititler",
+                tarih_icerik: "<p>Hititlere ait önemli bir kalıntı olan Karatepe-Aslantaş Açık Hava Müzesi'ne sahiptir. Kilikya-Frigya geçiş bölgesinde yer alır.</p>"
+            }
+        ];
+
+        // 2. Haritayı başlatma (Akdeniz Bölgesi merkezli ayarlandı)
+        var akdenizMap = L.map('map-akdeniz').setView([37.0, 34.0], 7);
+
+        // 3. Harita karolarını ekleme
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(akdenizMap);
+
+        // 4. Dinamik İçerik Yükleme Fonksiyonu
+        function loadCityDetails(ilData) {
+            var detailsDiv = document.getElementById('il-detay-alani');
+            
+            detailsDiv.innerHTML = 
+                '<h2>' + ilData.name + ' Detaylı Bilgiler</h2>' +
+                '<h3>' + ilData.tarih_baslik + '</h3>' +
+                ilData.tarih_icerik;
+
+            // Detay haritası olan iller (Şimdilik sadece Antalya'yı aktif edelim)
+            const detayliIller = ["Antalya"];
+
+            if (ilData.slug && detayliIller.includes(ilData.name)) {
+                detailsDiv.innerHTML += 
+                    '<p style="margin-top: 15px;">' +
+                    '<a href="' + ilData.slug + '.html" style="background-color: #d32f2f; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">' +
+                    ilData.name + ' Detay Haritasına Git &rarr;' +
+                    '</a></p>';
+            } else {
+                 detailsDiv.innerHTML += '<p style="margin-top: 15px; color: #ff9800;">Detay haritası henüz oluşturulmadı.</p>';
+            }
+        }
+
+        // 5. Bölgedeki her il için nokta (marker) ekleme ve tıklama olayı bağlama
+        akdeniz_iller.forEach(function(il) {
+            const detayliIller = ["Antalya"]; 
+
+            var marker = L.marker([il.lat, il.lng]).addTo(akdenizMap);
+            
+            var popupContent = "<b>" + il.name + "</b><br>";
+
+            if (il.slug && detayliIller.includes(il.name)) {
+                 popupContent += '<a href="' + il.slug + '.html" style="color: #d32f2f; font-weight: bold; text-decoration: none;">Tarihi Yapıları Haritada Gör &rarr;</a>'; 
+            } else {
+                 popupContent += 'Detay haritası beklemede.'; 
+            }
+
+            marker.bindPopup(popupContent, {
+                closeButton: true,
+                autoClose: false, 
+                closeOnClick: false 
+            });
+            
+            marker.on('click', function(e) {
+                loadCityDetails(il);
+                // Tıklanan ilin merkezine zoom yapma
+                akdenizMap.setView(e.latlng, 8); 
+                marker.openPopup(); 
+            });
+        });
+
+        // Sayfa yüklendiğinde varsayılan olarak Antalya'nın bilgilerini göster
+        loadCityDetails(akdeniz_iller[0]); 
+    </script>
+    
+</body>
+</html>
