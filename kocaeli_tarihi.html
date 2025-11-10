@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kocaeli Tarihi Yapıları Haritası</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #container { display: flex; height: 100vh; }
+        #map-city { flex: 3; } 
+        #info-panel { flex: 1; padding: 20px; overflow-y: auto; background-color: #f8f8f8; border-left: 1px solid #ddd; }
+        h1 { margin-top: 0; color: #5c6bc0; } 
+        h2 { color: #8c9eff; }
+        .back-button { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            z-index: 1000; 
+            background: #fff; 
+            padding: 10px 15px; 
+            border-radius: 5px; 
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+        .structure-card { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 5px; cursor: pointer; transition: background-color 0.2s; }
+        .structure-card:hover { background-color: #e8eaf6; }
+    </style>
+</head>
+<body>
+    <a href="marmara.html" class="back-button">← Marmara Bölgesine Dön</a> 
+
+    <div id="container">
+        <div id="map-city"></div>
+
+        <div id="info-panel">
+            <h1>Kocaeli Tarihi Yapıları Haritası</h1>
+            <p>Kocaeli'nin İzmit ve Gebze bölgelerindeki önemli tarihi ve kültürel mekanlarını inceleyin.</p>
+            <hr>
+            <div id="structure-list">
+                </div>
+            
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        // 1. Tarihi Yapıların Verisini Tanımlama (Çerkeşli Köyü Eklendi)
+        var tarihi_yapilar = [
+            { 
+                name: "Çoban Mustafa Paşa Külliyesi", 
+                lat: 40.7998, 
+                lng: 29.4315,
+                description: "Gebze'de 16. yüzyılda Mısır Valisi Çoban Mustafa Paşa tarafından yaptırılan, cami, medrese, türbe ve kervansaraydan oluşan büyük külliye.",
+                type: "Osmanlı Dönemi (16. yy)"
+            },
+            {
+                name: "Kocaeli Arkeoloji ve Etnografya Müzesi",
+                lat: 40.7625,
+                lng: 29.9160,
+                description: "İzmit merkezinde, antik Nikomedia'dan ve bölgenin Osmanlı ve Cumhuriyet dönemlerinden kalma eserlerin sergilendiği önemli bir kültür kurumu.",
+                type: "Kültürel Alan/Müze"
+            },
+            {
+                name: "Anibal (Hannibal) Anıtı",
+                lat: 40.7822, 
+                lng: 29.4417,
+                description: "Kartacalı ünlü komutan Hannibal'ın Gebze yakınlarında vefat ettiği rivayet edilen yerde bulunan anıt ve mezar.",
+                type: "Anıt/Tarihi Alan"
+            },
+            {
+                name: "Eskihisar Kalesi",
+                lat: 40.7714, 
+                lng: 29.4322,
+                description: "Gebze'deki Eskihisar mevkiinde, deniz kenarında bulunan ve Bizans döneminde inşa edilmiş, Osmanlı döneminde de kullanılan tarihi kale.",
+                type: "Bizans/Osmanlı"
+            },
+            {
+                // YENİ EKLENEN YAPI: Çerkeşli Köyü
+                name: "Çerkeşli Köyü (Tarihi Yerleşim)",
+                lat: 40.8154, 
+                lng: 29.5821,
+                description: "DAVUT'UN KÖYÜ.Dilovası'na bağlı, eski köy dokusunu koruyan, çevresindeki doğal ve kültürel miras açısından önem taşıyan yerleşim yeri.",
+                type: "Köy/Tarihi Yerleşim"
+            }
+        ];
+
+        // 2. Haritayı başlatma (İzmit ve Gebze'yi kapsayacak şekilde merkeze ayarlandı)
+        var cityMap = L.map('map-city').setView([40.78, 29.6], 11);
+
+        // 3. Harita karolarını ekleme
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(cityMap);
+
+        // 4. Dinamik Yapı Listesi Yükleme ve Marker Ekleme
+        var listDiv = document.getElementById('info-panel');
+        
+        tarihi_yapilar.forEach(function(yapi) {
+            // Marker Ekleme
+            var marker = L.marker([yapi.lat, yapi.lng]).addTo(cityMap);
+            
+            marker.bindPopup("<b>" + yapi.name + "</b><br>" + yapi.type);
+
+            // Yapı Kartını Oluşturma
+            var card = document.createElement('div');
+            card.className = 'structure-card';
+            card.innerHTML = 
+                '<h2>' + yapi.name + '</h2>' +
+                '<p><strong>Dönem/Tip:</strong> ' + yapi.type + '</p>' +
+                '<p>' + yapi.description + '</p>';
+            
+            listDiv.querySelector('#structure-list').appendChild(card);
+            
+            // Kart üzerine tıklandığında haritada ilgili noktaya gitme
+            card.addEventListener('click', function() {
+                cityMap.setView([yapi.lat, yapi.lng], 13); 
+                marker.openPopup();
+            });
+        });
+
+    </script>
+    
+</body>
+</html>
