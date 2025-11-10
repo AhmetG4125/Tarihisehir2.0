@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bilecik Tarihi Yapıları Haritası</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #container { display: flex; height: 100vh; }
+        #map-city { flex: 3; } 
+        #info-panel { flex: 1; padding: 20px; overflow-y: auto; background-color: #f8f8f8; border-left: 1px solid #ddd; }
+        h1 { margin-top: 0; color: #00897b; } /* Marmara rengi */
+        h2 { color: #26a69a; }
+        .back-button { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            z-index: 1000; 
+            background: #fff; 
+            padding: 10px 15px; 
+            border-radius: 5px; 
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+        .structure-card { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 5px; cursor: pointer; transition: background-color 0.2s; }
+        .structure-card:hover { background-color: #e0f2f1; } /* Hafif turkuaz vurgu */
+    </style>
+</head>
+<body>
+    <a href="marmara.html" class="back-button">← Marmara Bölgesine Dön</a> 
+
+    <div id="container">
+        <div id="map-city"></div>
+
+        <div id="info-panel">
+            <h1>Bilecik Tarihi Yapıları Haritası</h1>
+            <p>Osmanlı İmparatorluğu'nun tohumlarının atıldığı Söğüt ve kuruluş dönemi mimarisinin izleri.</p>
+            <hr>
+            <div id="structure-list">
+                </div>
+            
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        // 1. Tarihi ve Kültürel Yapıların Verisini Tanımlama (Saat Kulesi ve Müze Çıkarıldı)
+        var tarihi_yapilar = [
+            { 
+                name: "Ertuğrul Gazi Türbesi (Söğüt)", 
+                lat: 40.0254, 
+                lng: 30.1793,
+                description: "Osmanlı Devleti'nin kurucusu Osman Gazi'nin babası Ertuğrul Gazi'nin anıt mezarıdır ve her yıl anma törenleri yapılır.",
+                type: "Dini/Tarihi Türbe"
+            },
+            { 
+                name: "Şeyh Edebali Türbesi", 
+                lat: 40.1437, 
+                lng: 29.9884,
+                description: "Osmanlı Devleti'nin manevi kurucusu kabul edilen ve Osman Gazi'ye nasihatleriyle bilinen Şeyh Edebali'nin türbesi.",
+                type: "Dini/Tarihi Türbe"
+            }
+            // Saat Kulesi ve Müze Kaldırıldı
+        ];
+
+        // 2. Haritayı başlatma (Bilecik çevresi merkezli ayarlandı)
+        var cityMap = L.map('map-city').setView([40.09, 30.0], 11);
+
+        // 3. Harita karolarını ekleme
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(cityMap);
+
+        // 4. Dinamik Yapı Listesi Yükleme ve Marker Ekleme
+        var listDiv = document.getElementById('info-panel');
+        
+        tarihi_yapilar.forEach(function(yapi) {
+            // Marker Ekleme
+            var marker = L.marker([yapi.lat, yapi.lng]).addTo(cityMap);
+            
+            marker.bindPopup("<b>" + yapi.name + "</b><br>" + yapi.type);
+
+            // Yapı Kartını Oluşturma
+            var card = document.createElement('div');
+            card.className = 'structure-card';
+            card.innerHTML = 
+                '<h2>' + yapi.name + '</h2>' +
+                '<p><strong>Dönem/Tip:</strong> ' + yapi.type + '</p>' +
+                '<p>' + yapi.description + '</p>';
+            
+            listDiv.querySelector('#structure-list').appendChild(card);
+            
+            // Kart üzerine tıklandığında haritada ilgili noktaya gitme
+            card.addEventListener('click', function() {
+                cityMap.setView([yapi.lat, yapi.lng], 13); 
+                marker.openPopup();
+            });
+        });
+
+    </script>
+    
+</body>
+</html>
